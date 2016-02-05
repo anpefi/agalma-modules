@@ -7,6 +7,7 @@ __version_="0.0.1"
 
 import os
 import subprocess
+import datetime
 from glob import glob
 from collections import namedtuple
 from agalma import config
@@ -43,6 +44,21 @@ pipe.add_arg(
         ribosomal-large, ribosomal, and/or unknown.""")
 
 SpeciesData = namedtuple('SpeciesData', "name ncbi_id itis_id catalog_id")
+
+### WRAPPERS ###
+class OrthoFinder (wrappers.BaseWrapper):
+    """
+    Python script for the inference of orthologous gene groups
+    https://github.com/davidemms/OrthoFinder
+    """
+
+    def __init__(self, input, *args, **kwargs):
+        # By now it is located in ~/bin
+        self.init('orthofinder.py', **kwargs)
+        self.add_threading('-t')
+        self.check_input('-f', input)
+        self.args += args
+        self.run()
 
 ### STAGES ###
 
@@ -106,9 +122,17 @@ def prepare_fasta(id, _run_id,load_ids, species, seq_type,
 
     ingest('fasta_dir', 'fasta')
 
-#@pipe.stage
-#def orthofinder(id, _run_id,load_ids, species, outdir):
-#    """ Run OrthoFinder """
+@pipe.stage
+def run_orthofinder(id, _run_id,load_ids, fasta_dir, species, outdir):
+    """ Run OrthoFinder """
+    dateStr = datetime.date.today().strftime("%b%d")
+    OrthoFinder(fasta_dir)
+    ogfile = os.path.join(fasta_dir, 'Results_' + dateStr, 'OrthologousGroups.txt')
+
+    ingest('ogfile')
+
+
+
 
 if __name__ == "__main__":
     # Run the pipeline.
