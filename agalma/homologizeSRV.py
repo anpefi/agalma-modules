@@ -2,7 +2,7 @@
 # (Score Ratio Values) instead of raw Bit-scores. It also allows for change the
 # Inflation parameter of MCL. nucleotide secuences are compared by means of
 # blastn.
-# Andrés Pérez-Figueroa. 2016.
+# Andres Perez-Figueroa. 2016.
 
 # Agalma - Tools for processing gene sequence data and automating workflows
 # Copyright (c) 2012-2014 Brown University. All rights reserved.
