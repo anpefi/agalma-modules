@@ -8,6 +8,7 @@ __version_="0.0.1"
 import os
 import subprocess
 import datetime
+import re
 from glob import glob
 from collections import namedtuple
 from agalma import config
@@ -131,6 +132,37 @@ def run_orthofinder(id, _run_id,load_ids, fasta_dir, species, outdir):
 
     ingest('ogfile')
 
+@pipe.stage
+def load_orthofinder_cluster(_run_id, ogfile):
+    """Load cluster file from mcl (via orthofinder) into homology database"""
+
+    nseqs = 0
+    hist = {}
+
+    database.execute("BEGIN")
+    database.execute("DELETE FROM homology WHERE run_id=?;", (_run_id,))
+    with open(ogfile, 'r') as f:
+        cluster_id = 0
+        for line in f:
+            cluster = filter(lambda s : s.isdigit(), re.split(r'[@\s]', line))
+            n = len(cluster)
+            hist[n] = hist.get(n, 0) + 1
+            if n >= 4:
+                nseqs += n
+                for seq_id in cluster:
+                    database.execute("""
+                        INSERT INTO homology (run_id, component_id, sequence_id)
+                        VALUES (?,?,?);""",
+                        (_run_id, cluster_id, seq_id))
+                cluster_id += 1
+    database.execute("COMMIT")
+
+    utils.info(
+        "histogram of gene cluster sizes:\n",
+        '\n '.join("%d\t:\t%d" % (k, hist[k]) for k in sorted(hist)))
+
+    diagnostics.log('nseqs', nseqs)
+    diagnostics.log('histogram', hist)
 
 
 
